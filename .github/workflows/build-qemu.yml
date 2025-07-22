@@ -19,6 +19,11 @@ jobs:
         echo "Starting QEMU compilation..."
         docker run --platform linux/arm64 --rm -v /tmp:/output ubuntu:20.04 bash -c "
           set -e
+          echo 'Setting up non-interactive environment...'
+          export DEBIAN_FRONTEND=noninteractive
+          export TZ=UTC
+          ln -snf /usr/share/zoneinfo/\$TZ /etc/localtime && echo \$TZ > /etc/timezone
+          
           echo 'Installing build dependencies...'
           apt update -qq
           apt install -y build-essential wget libglib2.0-dev libpixman-1-dev pkg-config python3 ninja-build zlib1g-dev libfdt-dev
