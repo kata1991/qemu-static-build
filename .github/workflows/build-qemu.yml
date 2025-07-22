@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
       
     - name: Build Static QEMU
       run: |
@@ -60,7 +60,7 @@ jobs:
         "
         
     - name: Upload QEMU Binary
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: qemu-static-arm64
         path: /tmp/qemu-static-arm64
