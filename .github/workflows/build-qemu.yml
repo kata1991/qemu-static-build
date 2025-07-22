@@ -1,0 +1,67 @@
+name: Build Static QEMU ARM64
+on: 
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-qemu:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+      
+    - name: Build Static QEMU
+      run: |
+        echo "Starting QEMU compilation..."
+        docker run --platform linux/arm64 --rm -v /tmp:/output ubuntu:20.04 bash -c "
+          set -e
+          echo 'Installing build dependencies...'
+          apt update -qq
+          apt install -y build-essential wget libglib2.0-dev libpixman-1-dev pkg-config python3 ninja-build zlib1g-dev libfdt-dev
+          
+          echo 'Downloading QEMU source...'
+          cd /tmp
+          wget -q https://download.qemu.org/qemu-4.2.1.tar.xz
+          tar -xf qemu-4.2.1.tar.xz
+          cd qemu-4.2.1
+          
+          echo 'Configuring QEMU for static build...'
+          ./configure \
+            --target-list=aarch64-softmmu \
+            --static \
+            --disable-vnc \
+            --disable-gtk \
+            --disable-sdl \
+            --disable-opengl \
+            --disable-virglrenderer \
+            --disable-spice \
+            --disable-usb-redir \
+            --enable-kvm \
+            --disable-tools \
+            --disable-guest-agent \
+            --disable-docs
+          
+          echo 'Compiling QEMU (this may take 15-20 minutes)...'
+          make -j\$(nproc)
+          
+          echo 'Stripping and copying binary...'
+          strip aarch64-softmmu/qemu-system-aarch64
+          cp aarch64-softmmu/qemu-system-aarch64 /output/qemu-static-arm64
+          
+          echo 'Verifying binary...'
+          file /output/qemu-static-arm64
+          /output/qemu-static-arm64 --version || true
+          
+          echo 'Build completed successfully!'
+        "
+        
+    - name: Upload QEMU Binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: qemu-static-arm64
+        path: /tmp/qemu-static-arm64
+        retention-days: 30
